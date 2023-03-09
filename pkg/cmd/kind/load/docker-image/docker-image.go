@@ -18,11 +18,16 @@ limitations under the License.
 package load
 
 import (
+	"bytes"
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
+	dockerclient "github.com/docker/docker/client"
+	"github.com/melbahja/goph"
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/kind/pkg/cluster"
@@ -168,6 +173,90 @@ func runE(logger log.Logger, flags *flagpole, args []string) error {
 	// return early if no node needs the image
 	if len(selectedNodes) == 0 {
 		return nil
+	}
+
+	cli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
+	if err != nil {
+		return errors.Wrap(err, "failed to create docker client")
+	}
+	defer cli.Close()
+
+	u, err := url.Parse(cli.DaemonHost())
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("failed to parse docker host %q", cli.DaemonHost()))
+	}
+	if u.Scheme == "tcp" {
+		host, _, err := net.SplitHostPort(u.Host)
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("failed to split host port %q", u.Host))
+		}
+
+		auth, err := goph.Key(filepath.Join(os.Getenv("HOME"), "/.ssh/id_rsa"), "")
+		if err != nil {
+			return errors.Wrap(err, "failed to get ssh public id")
+		}
+
+		client, err := goph.New("root", host, auth)
+		if err != nil {
+			return errors.Wrap(err, "failed to create ssh client")
+		}
+		defer client.Close()
+
+		out, err := client.Run("mktemp -d")
+		if err != nil {
+			return errors.Wrap(err, "failed to create temporary directory")
+		}
+
+		dir := string(bytes.TrimSpace(out))
+		defer func() {
+			if _, err = client.Run("rm -rf " + dir); err != nil {
+				logger.Warnf("failed to remove temporary directory %s: %v", dir, err)
+			}
+		}()
+
+		imagesTarPath := filepath.Join(dir, "images.tar")
+		cmd := fmt.Sprintf("docker save -o %s %s", imagesTarPath, strings.Join(imageNames, " "))
+		if _, err = client.Run(cmd); err != nil {
+			return errors.Wrap(err, "failed to save docker images")
+		}
+
+		nodeImagesTarPath := "/tmp/images.tar"
+		for _, selectedNode := range selectedNodes {
+			selectedNode := selectedNode
+			fns = append(fns, func() error {
+				var err error
+				if _, err = client.Run(fmt.Sprintf("docker cp %s %s:%s", imagesTarPath, selectedNode.String(), nodeImagesTarPath)); err != nil {
+					return err
+				}
+
+				var deferredErr error
+				defer func() {
+					if deferredErr = selectedNode.Command("rm", "-f", nodeImagesTarPath).Run(); deferredErr != nil {
+						msg := fmt.Sprintf("failed to remove images tar file %s in node %s", nodeImagesTarPath, selectedNode.String())
+						deferredErr = errors.Wrap(deferredErr, msg)
+						if err != nil {
+							logger.Warn(deferredErr.Error())
+						}
+					}
+				}()
+
+				snapshotter, err := nodeutils.GetSnapshotter(selectedNode)
+				if err != nil {
+					return err
+				}
+				cmd := selectedNode.Command("ctr", "--namespace=k8s.io", "images", "import", "--all-platforms", "--digests", "--snapshotter="+snapshotter, nodeImagesTarPath)
+				if err = cmd.Run(); err != nil {
+					return errors.Wrap(err, "failed to load image")
+				}
+				if err = selectedNode.Command("rm", "-f", nodeImagesTarPath).Run(); err != nil {
+					return err
+				}
+
+				return deferredErr
+			})
+		}
+
+		return errors.UntilErrorConcurrent(fns)
 	}
 
 	// Setup the tar path where the images will be saved

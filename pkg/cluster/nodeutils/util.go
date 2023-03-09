@@ -78,7 +78,7 @@ func CopyNodeToNode(a, b nodes.Node, file string) error {
 
 // LoadImageArchive loads image onto the node, where image is a Reader over an image archive
 func LoadImageArchive(n nodes.Node, image io.Reader) error {
-	snapshotter, err := getSnapshotter(n)
+	snapshotter, err := GetSnapshotter(n)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func LoadImageArchive(n nodes.Node, image io.Reader) error {
 	return nil
 }
 
-func getSnapshotter(n nodes.Node) (string, error) {
+func GetSnapshotter(n nodes.Node) (string, error) {
 	out, err := exec.Output(n.Command("containerd", "config", "dump"))
 	if err != nil {
 		return "", errors.Wrap(err, "failed to detect containerd snapshotter")
