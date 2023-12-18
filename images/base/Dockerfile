@@ -72,7 +72,7 @@ COPY --chmod=0644 files/etc/systemd/system/kubelet.service.d/* /etc/systemd/syst
 RUN echo "Installing Packages ..." \
     && DEBIAN_FRONTEND=noninteractive clean-install \
       systemd \
-      conntrack iptables iproute2 ethtool util-linux mount ebtables kmod \
+      conntrack iptables nftables iproute2 ethtool util-linux mount ebtables kmod \
       libseccomp2 pigz fuse-overlayfs \
       nfs-common open-iscsi \
       bash ca-certificates curl jq procps \

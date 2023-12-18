@@ -186,7 +186,7 @@ type Networking struct {
 	// If DisableDefaultCNI is true, kind will not install the default CNI setup.
 	// Instead the user should install their own CNI after creating the cluster.
 	DisableDefaultCNI bool `yaml:"disableDefaultCNI,omitempty" json:"disableDefaultCNI,omitempty"`
-	// KubeProxyMode defines if kube-proxy should operate in iptables or ipvs mode
+	// KubeProxyMode defines if kube-proxy should operate in iptables, nftables or ipvs mode
 	// Defaults to 'iptables' mode
 	KubeProxyMode ProxyMode `yaml:"kubeProxyMode,omitempty" json:"kubeProxyMode,omitempty"`
 	// DNSSearch defines the DNS search domain to use for nodes. If not set, this will be inherited from the host.
@@ -211,6 +211,8 @@ type ProxyMode string
 const (
 	// IPTablesProxyMode sets ProxyMode to iptables
 	IPTablesProxyMode ProxyMode = "iptables"
+	// NFTablesProxyMode sets ProxyMode to nftables
+	NFTablesProxyMode ProxyMode = "nftables"
 	// IPVSProxyMode sets ProxyMode to ipvs
 	IPVSProxyMode ProxyMode = "ipvs"
 )

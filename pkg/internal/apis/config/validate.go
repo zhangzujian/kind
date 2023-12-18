@@ -62,8 +62,10 @@ func (c *Cluster) Validate() error {
 		errs = append(errs, errors.Errorf("invalid service subnet %v", err))
 	}
 
-	// KubeProxyMode should be iptables or ipvs
-	if c.Networking.KubeProxyMode != IPTablesProxyMode && c.Networking.KubeProxyMode != IPVSProxyMode &&
+	// KubeProxyMode should be iptables, nftables or ipvs
+	if c.Networking.KubeProxyMode != IPTablesProxyMode &&
+		c.Networking.KubeProxyMode != NFTablesProxyMode &&
+		c.Networking.KubeProxyMode != IPVSProxyMode &&
 		c.Networking.KubeProxyMode != NoneProxyMode {
 		errs = append(errs, errors.Errorf("invalid kubeProxyMode: %s", c.Networking.KubeProxyMode))
 	}
