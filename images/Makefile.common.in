@@ -31,7 +31,7 @@ GO_VERSION=$(shell cat $(CURDIR)/../../.go-version | head -n1)
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
 # build with buildx
-PLATFORMS?=linux/amd64,linux/arm64
+PLATFORMS?=linux/amd64
 OUTPUT?=
 PROGRESS=auto
 EXTRA_BUILD_OPT?=
