@@ -42,10 +42,11 @@ IFS=" " read -r -a __arches__ <<< "$ARCHES"
 
 set -x
 # ensure clean build
-(cd "${KUBEROOT}" && make clean)
+# (cd "${KUBEROOT}" && make clean)
 # get kubernetes version
-version_line="$(cd "${KUBEROOT}"; ./hack/print-workspace-status.sh | grep 'STABLE_DOCKER_TAG')"
-kube_version="${version_line#"STABLE_DOCKER_TAG "}"
+# version_line="$(cd "${KUBEROOT}"; ./hack/print-workspace-status.sh | grep 'STABLE_DOCKER_TAG')"
+# kube_version="${version_line#"STABLE_DOCKER_TAG "}"
+kube_version=${KUBEROOT}
 
 # kubernetes build option(s)
 GOFLAGS="${GOFLAGS:-}"
