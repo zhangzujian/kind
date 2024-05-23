@@ -41,7 +41,7 @@ jobs:
       - name: Build base image
         env:
           REGISTRY: "ghcr.io/${{ github.repository_owner }}"
-        run: make -C base/images push
+        run: make -C images/base push
 
       - name: Build node image
         env:
