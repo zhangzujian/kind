@@ -38,15 +38,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build base image
-        env:
-          REGISTRY: "ghcr.io/${{ github.repository_owner }}"
-        run: make -C images/base push
-
-      # - name: Build node image
+      # - name: Build base image
       #   env:
       #     REGISTRY: "ghcr.io/${{ github.repository_owner }}"
-      #     KUBEROOT: v1.30.1
-      #     ARCHES: amd64
-      #     BASE_IMAGE: ghcr.io/zhangzujian/base:v20240523-54d0d7c
-      #   run: bash hack/release/build/push-node.sh
+      #   run: make -C images/base push
+
+      - name: Build node image
+        env:
+          REGISTRY: "ghcr.io/${{ github.repository_owner }}"
+          KUBEROOT: v1.30.1
+          ARCHES: amd64
+          BASE_IMAGE: ghcr.io/zhangzujian/base:v20240523-1a5e8c7
+        run: bash hack/release/build/push-node.sh
