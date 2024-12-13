@@ -17,6 +17,7 @@ set -o errexit -o nounset -o pipefail
 
 REGISTRY="${REGISTRY:-kindest}"
 IMAGE_NAME="${IMAGE_NAME:-node}"
+BASE_IMAGE="${BASE_IMAGE:-}"
 
 # cd to the repo root
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." &> /dev/null && pwd -P)"
@@ -41,10 +42,11 @@ IFS=" " read -r -a __arches__ <<< "$ARCHES"
 
 set -x
 # ensure clean build
-(cd "${KUBEROOT}" && make clean)
+# (cd "${KUBEROOT}" && make clean)
 # get kubernetes version
-version_line="$(cd "${KUBEROOT}"; ./hack/print-workspace-status.sh | grep 'STABLE_DOCKER_TAG')"
-kube_version="${version_line#"STABLE_DOCKER_TAG "}"
+# version_line="$(cd "${KUBEROOT}"; ./hack/print-workspace-status.sh | grep 'STABLE_DOCKER_TAG')"
+# kube_version="${version_line#"STABLE_DOCKER_TAG "}"
+kube_version=${KUBEROOT}
 
 # kubernetes build option(s)
 GOFLAGS="${GOFLAGS:-}"
@@ -66,7 +68,7 @@ IMAGE="${REGISTRY}/${IMAGE_NAME}:${kube_version}"
 images=()
 for arch in "${__arches__[@]}"; do
     image="${REGISTRY}/${IMAGE_NAME}-${arch}:${kube_version}"
-    "${REPO_ROOT}/bin/kind" build node-image --image="${image}" --arch="${arch}" "${KUBEROOT}"
+    "${REPO_ROOT}/bin/kind" build node-image --base-image="${BASE_IMAGE}" --image="${image}" --arch="${arch}" "${KUBEROOT}"
     images+=("${image}")
 done
 

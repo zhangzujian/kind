@@ -1,0 +1,53 @@
+name: Build x86 Image
+
+on:
+  pull_request:
+    branches:
+    - main
+  push:
+    branches:
+    - main
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  build-node-image:
+    name: Build node image
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+          check-latest: true
+          cache: false
+
+      # - uses: actions/checkout@v4
+      #   with:
+      #     repository: kubernetes/kubernetes
+      #     ref: v1.30.1
+      #     path: kubernetes
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # - name: Build base image
+      #   env:
+      #     REGISTRY: "ghcr.io/${{ github.repository_owner }}"
+      #   run: make -C images/base push
+
+      - name: Build node image
+        env:
+          REGISTRY: "ghcr.io/${{ github.repository_owner }}"
+          KUBEROOT: v1.32.0
+          ARCHES: amd64
+          # BASE_IMAGE: ghcr.io/zhangzujian/base:v20241125-9d56aea
+          BASE_IMAGE: docker.io/kindest/base:v20241212-9f82dd49
+        run: bash hack/release/build/push-node.sh
